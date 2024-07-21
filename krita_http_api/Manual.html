@@ -1,18 +1,19 @@
 <h1 id="krita-http-api">Krita HTTP API</h1>
 <p>Expose Krita API by a HTTP Server, which relies on python standard
-module <code>http.server</code>. for simplicity, it’s a
-<strong>single-thread</strong> HTTP server, which will read request body
-and respond a json.</p>
+module <code>http.server</code>. it’s a multi-threaded BIO HTTP server,
+which will read request body and respond a json.</p>
 <h1 id="usage">Usage</h1>
 <ol type="1">
 <li>Download this repo as ZIP and Open Krita, import it via menu
 ‘Tools/Scripts/Import Python Plugin from File’.</li>
-<li>restart Krita, and you will see a float message “API Server
-Launched, port: 8080”</li>
-<li><code>curl -X POST -d '{"delay": 200}' http://localhost:1976</code></li>
+<li>restart Krita, open a document</li>
+<li>execute
+<code>curl -d '{"code": "floating-message", "param": {"message": "Hello, World!"} }' localhost:1976</code></li>
 </ol>
+<p>If you need add more API, just modify the variable
+<code>ROUTERS</code> in <code>HttpRouter.py</code>. eg:</p>
 <h1 id="documentation">Documentation</h1>
-<p>TODO Not implemented</p>
+<p>TODO API Documentation</p>
 <h1 id="call-flow">Call Flow</h1>
 <p>If you’d like to imporve or modify this, check this sequence diagram
 explaining the handling process of an HTTP Request.</p>
