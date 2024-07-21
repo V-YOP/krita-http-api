@@ -60,8 +60,13 @@ def active_window() -> Window | None:
 
 def active_view() -> View | None:
     window = active_window()
-    return None if window is None else window.activeView()
-
+    if window is None:
+        return None
+    
+    view = window.activeView()
+    if view is None or view.document() is None:
+        return None
+    return view
 
 def active_document() -> Document | None:
     view = active_view()
