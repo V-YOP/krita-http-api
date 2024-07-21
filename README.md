@@ -5,19 +5,14 @@ Expose Krita API by a HTTP Server, which relies on python standard module `http.
 # Usage
 
 1. Download this repo as ZIP and Open Krita, import it via menu 'Tools/Scripts/Import Python Plugin from File'.
-2. restart Krita, and you will see a float message "API Server Launched, port: 8080"
-3. open a document, and execute `curl -X POST -d '{"delay": 200}' http://localhost:1976`
+2. restart Krita, open a document
+3. execute `curl -d '{"code": "floating-message", "param": {"message": "Hello, World!"} }' localhost:1976`
 
 If you need add more API, just modify the variable `ROUTERS` in `HttpRouter.py`. eg: 
 
-```python
-
-
-```
-
 # Documentation
 
-TODO Not implemented
+TODO API Documentation
 
 # Call Flow
 
