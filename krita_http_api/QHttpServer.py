@@ -88,17 +88,24 @@ class RequestHandler(BaseHTTPRequestHandler):
         
         logger.info(f"cost_time: {end_time - start_time} s, response received from krita, responding to client...")
 
+        # Send response status code
+        self.send_response_only(200)
+
         # Get the response from the signal handler
         response = self.server.signal_handler.response
         if not isinstance(response, str):
             try:
                 response = json.dumps(response)
             except:
-                return self.send_json_error(f"json dump response failed, check your biz code! request body: {request_body_str}")
-
-        # Send response status code
-        self.send_response_only(200)
-
+                stack_trace = traceback.format_exc()
+                logger.warn(stack_trace)
+                response = json.dumps({
+                    'ok': False,
+                    'msg': f"json dump response failed, check your biz code! request body: {request_body_str}",
+                    'data': None,
+                    'call_stack': stack_trace
+                })
+        
         # Send headers
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.end_headers()
@@ -119,6 +126,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         
         end_time = time.time()
         logger.info(f"handling finished, cost time: {end_time - start_time} ms")
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    pass
 
 
 class SignalHandler(QObject):
