@@ -1,7 +1,10 @@
 
+from .Logger import Logger
 from typing import Any, Callable, Union
 
 import inspect
+
+logger = Logger()
 
 class HttpRouter:
     def __init__(self) -> None:
@@ -12,11 +15,11 @@ class HttpRouter:
             return fail(f"field 'code' missing", None)
         if type(req['code']) is not str:
             return fail(f"field 'code' must be string", None)
-        if req['code'] not in self.routers:
-            return fail(f"route '{req['code']}' is not defined", None)
         if 'param' not in req:
             return fail(f"field 'param' missing", None)
-        
+        if req['code'] not in self.routers:
+            return fail(f"route '{req['code']}' is not defined. valid routes: {list(self.routers.keys())}", None)
+        logger.info(f"request '{req['code']}, param: {req['param']}")
         self.routers[req['code']](req['param'], ok, fail)
 
     def add_route(self, code: str, cb: Union[Callable[[Any], Any], Callable[[Any, Callable[[dict], None], Callable[[dict], None]], None]]):
@@ -27,7 +30,7 @@ class HttpRouter:
         parameters = signature.parameters
         param_len = len(parameters)
         if param_len not in (1, 3):
-            raise ValueError(f"cb must have 1(sync) or 3(async) parameters")
+            raise ValueError(f"cb must have 1 (sync) or 3 (async) parameters")
         
         self.routers[code] = cb
         if param_len == 1:

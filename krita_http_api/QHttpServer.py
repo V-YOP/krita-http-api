@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread, QCoreApplication, QEventL
 from PyQt5.QtWidgets import QApplication
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-
+import uuid
 from .Logger import Logger
 logger = Logger("QHttpServer")
 
@@ -28,10 +28,13 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         # Send headers
         self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Connection', 'keep-alive')
+        response_bytes = response_json.encode('utf-8')
+        self.send_header('Content-Length', str(len(response_bytes)))  # Add Content-Length header
+    
         self.end_headers()
 
-        # Write the JSON response
-        self.wfile.write(response_json.encode('utf-8'))
+        self.wfile.write(response_bytes)
 
     def __go(self):
         # Get the length of the request body
@@ -40,7 +43,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.send_json_error("Header 'Content-Length' is required!")
 
         content_length = int(self.headers['Content-Length'])
-        logger.info(f"{content_length=}")
+        #logger.info(f"{content_length=}")
 
         if content_length == 0:
             logger.warn("no request body")
@@ -57,15 +60,25 @@ class RequestHandler(BaseHTTPRequestHandler):
             logger.warn(f"body parse error, got '{request_body_str}'")
             return self.send_json_error("Body must be a JSON Object!")
         
-        logger.info(f"read json body succeed, emit it...")
+        #logger.info(f"read json body succeed, emit it...")
 
         start_time = time.time()
+        curr_request_id = str(uuid.uuid4())
         # Emit signal with the requested path
-        self.server.signal_handler.new_request.emit(request_body)
+        self.server.signal_handler.new_request.emit(curr_request_id, request_body)
 
         # Wait for the result to be set by the main thread
         loop = QEventLoop()
-        self.server.signal_handler.result_ready.connect(loop.quit)
+
+        response = None
+        def on_result_ready(request_id):
+            nonlocal response
+            if request_id != curr_request_id:
+                return
+            response = self.server.signal_handler.response[request_id]
+            del self.server.signal_handler.response[request_id]
+            loop.quit()
+        self.server.signal_handler.result_ready.connect(on_result_ready)
         
         timeout = False
 
@@ -86,13 +99,11 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         end_time = time.time()
         
-        logger.info(f"cost_time: {end_time - start_time} s, response received from krita, responding to client...")
+        #logger.info(f"cost_time: {end_time - start_time} s, response received from krita, responding to client...")
 
         # Send response status code
         self.send_response_only(200)
 
-        # Get the response from the signal handler
-        response = self.server.signal_handler.response
         if not isinstance(response, str):
             try:
                 response = json.dumps(response)
@@ -108,16 +119,19 @@ class RequestHandler(BaseHTTPRequestHandler):
         
         # Send headers
         self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Connection', 'keep-alive')
+        response_bytes = response.encode('utf-8')
+        self.send_header('Content-Length', str(len(response_bytes)))  # Add Content-Length header
+    
         self.end_headers()
 
-        # Write the JSON response
-        self.wfile.write(response.encode('utf-8'))
+        self.wfile.write(response_bytes)
 
     def do_POST(self):
         self.do_GET()
 
     def do_GET(self):
-        logger.info(f"start handling...")
+        #logger.info(f"start handling...")
 
         # Record start time
         start_time = time.time()
@@ -125,19 +139,19 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.__go()
         
         end_time = time.time()
-        logger.info(f"handling finished, cost time: {end_time - start_time} ms")
+        #logger.info(f"handling finished, cost time: {end_time - start_time} ms")
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     pass
 
 
 class SignalHandler(QObject):
-    new_request = pyqtSignal(dict)
-    result_ready = pyqtSignal()
+    new_request = pyqtSignal(str, dict)
+    result_ready = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
-        self.response = None
+        self.response = {}
 
 class ServerThread(QThread):
     def __init__(self, signal_handler, port=8080):
@@ -147,7 +161,7 @@ class ServerThread(QThread):
 
     def run(self):
         server_address = ('', self.port)
-        httpd = HTTPServer(server_address, RequestHandler)
+        httpd = ThreadingHTTPServer(server_address, RequestHandler)
         httpd.signal_handler = self.signal_handler
         logger.info(f'Starting httpd server on port {self.port}...')
         httpd.serve_forever()
@@ -170,7 +184,7 @@ class QHTTPServer(QObject):
         self.__on_request = go
 
     def start(self):
-        logger.info(f"HTTP_SERVER port={self.port} starting...")
+        #logger.info(f"HTTP_SERVER port={self.port} starting...")
         self.server_thread.start()
 
     # TODO make it async using qt event loop
@@ -192,12 +206,12 @@ class QHTTPServer(QObject):
             return cb(req, ok, fail)
         self.__on_request = go
 
-    def __handle_request(self, req):
+    def __handle_request(self, req_id, req):
         resolve_called = False
         def resolve(res):
             nonlocal resolve_called
             resolve_called = True
-            self.__send_response(res)
+            self.__send_response(req_id, res)
         try:
             self.__on_request(req, resolve)
         except BaseException as e:
@@ -208,8 +222,8 @@ class QHTTPServer(QObject):
                 resolve({'ok': False, 'msg': 'something bad happened, check your biz code', 'e': str(e), 'call_stack': stack_trace})
                 
 
-    def __send_response(self, response):
+    def __send_response(self, req_id, response):
         # Set the response and notify the handler
-        self.signal_handler.response = response
-        self.signal_handler.result_ready.emit()
+        self.signal_handler.response[req_id] = response
+        self.signal_handler.result_ready.emit(req_id)
 
