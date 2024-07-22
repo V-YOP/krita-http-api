@@ -19,4 +19,3 @@ TODO API Documentation
 If you'd like to imporve or modify this, check this sequence diagram explaining the handling process of an HTTP Request.
 
 ![](./sequence_diagram.png)
-

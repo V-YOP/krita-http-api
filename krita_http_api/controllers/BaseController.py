@@ -1,10 +1,11 @@
+from ..HttpRouter import ResponseFail
 from .route import route, router
 from typing import Any
 from krita import *
 from ..utils import *
 from PyQt5.QtCore import QTimer
 
-@route('ping')
+@route('base/ping')
 def ping(req):
     return {
         'msg': 'pong',
@@ -14,14 +15,6 @@ def ping(req):
 @route('route-list')
 def route_list(_):
     return list(router.routers.keys())
-
-@route('current-tool-get')
-def current_tool_get(_):
-    return current_tool()
-
-@route('current-tool-set')
-def current_tool_get(req):
-    return set_current_tool(req)
 
 @route('floating-message')
 def current_tool_get(req):
