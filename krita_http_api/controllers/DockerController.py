@@ -1,3 +1,7 @@
+"""
+get and set docker display status
+"""
+
 from ..HttpRouter import ResponseFail
 from .route import route, router
 from typing import Any

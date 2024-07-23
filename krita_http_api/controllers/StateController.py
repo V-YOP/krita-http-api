@@ -1,3 +1,8 @@
+"""
+get and set global state in krita, like brush preset, painting opacity, brush size, blending Mode... 
+some checked action which is useful for painting is also included, like 'canvas only' and 'eraser mode'...
+"""
+
 from ..HttpRouter import ResponseFail
 from .route import route, router
 from typing import Any, Tuple

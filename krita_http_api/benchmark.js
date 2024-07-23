@@ -2,11 +2,12 @@
 
 const PORT = 1976
 const PARALLEL_NUM = 1
-const REQUEST_BATCH_SIZE = 200
+const REQUEST_BATCH_SIZE = 100
+const semaphare = mkSemaphare(7)
 
 // code -> param
 const ROUTES = {
-    // 'base/ping': () => ({}),
+    // 'ping': () => ({}),  
     // 'state/get': () => ({}),
     // 'docker/list': () => ({}),
     // 'docker/set-state':  () => ({
@@ -14,13 +15,15 @@ const ROUTES = {
     //     "visible": true,
     //     "floating": true
     // }),
-    'state/set': () => ({
-        brushPreset: '粗糙硬边',
-        foreground: [Math.random(), Math.random(),Math.random(),Math.random()],
-        background: [Math.random(), Math.random(),Math.random(),Math.random()],
-        brushSize: Math.random() * 100,
-        brushRotation: Math.random() * 100,
-    })
+    // 'state/set': () => ({
+    //     brushPreset: '粗糙硬边',
+    //     foreground: [Math.random(), Math.random(),Math.random(),Math.random()],
+    //     background: [Math.random(), Math.random(),Math.random(),Math.random()],
+    //     brushSize: Math.random() * 100,
+    //     brushRotation: Math.random() * 100,
+    // }),
+    icon : () => ({"iconName": "select", "mode": "Normal", "state": "Off"}),
+    theme: () => ({})
 }
 
 ;((async () => {
@@ -59,11 +62,34 @@ const ROUTES = {
 
 })().catch(console.error));
 
+
+
+function mkSemaphare(count = 5) {
+    const cbs = []
+    return {
+        wait: () => new Promise(resolve => {
+            if (count > 0) {
+                resolve()
+                count--
+            } else {
+                cbs.push(() => resolve())
+            }
+        }),
+        signal: () => {
+            count++
+            const cb = cbs.shift()
+            cb && cb()
+        }
+    }
+}
+
 async function request(code, param) {
+    await semaphare.wait()
     const res = await fetch(`http://localhost:${PORT}`, {body: JSON.stringify({code, param}), 'keepalive': true, method: 'POST'})
     const body = await res.json()
     if (!body.ok) {
         throw body
     }
+    semaphare.signal()
     return body
 }
