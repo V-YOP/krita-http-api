@@ -2,12 +2,12 @@
 
 const PORT = 1976
 const PARALLEL_NUM = 1
-const REQUEST_BATCH_SIZE = 100
-const semaphare = mkSemaphare(7)
+const REQUEST_BATCH_SIZE = 1000
+const semaphare = mkSemaphare(8)
 
 // code -> param
 const ROUTES = {
-    // 'ping': () => ({}),  
+    'ping': () => ({}),  
     // 'state/get': () => ({}),
     // 'docker/list': () => ({}),
     // 'docker/set-state':  () => ({
@@ -22,8 +22,7 @@ const ROUTES = {
     //     brushSize: Math.random() * 100,
     //     brushRotation: Math.random() * 100,
     // }),
-    icon : () => ({"iconName": "select", "mode": "Normal", "state": "Off"}),
-    theme: () => ({})
+    // icon : () => ({"iconName": "select", "mode": "Normal", "state": "Off"}),
 }
 
 ;((async () => {

@@ -1,7 +1,7 @@
 """
 get and set docker display status
 """
-
+from ..json_validate import Nullable
 from ..HttpRouter import ResponseFail
 from .route import route, router
 from typing import Any
@@ -55,21 +55,21 @@ def docker_list(_):
             res[docker.objectName()]['geometry'] = [geo.x(), geo.y(), geo.width(), geo.height()],
     return res
 
-@route('docker/set-state')
+@route('docker/set-state', {
+    'objectName': str,
+    'visible': Nullable(bool),
+    'floating': Nullable(bool),
+    'geometry': Nullable((float, float, float, float)),
+    'withHeader': Nullable(bool),
+})
 def docker_setstate(req):
     assert isinstance(req, dict), 'param must be json object'
-    objectName = req.get('objectName')
+    objectName = req['objectName']
     visible = req.get('visible')
     floating = req.get('floating')
     geometry = req.get('geometry')
     with_header = req.get('withHeader')
 
-    assert objectName is not None and isinstance(objectName, str), "'objectName' is required and must be a string"
-    assert visible is None or isinstance(visible, bool), "'visible' must be boolean"
-    assert floating is None or isinstance(floating, bool), "'floating' must be boolean"
-    assert geometry is None or (isinstance(geometry, list) and len(geometry) == 4 and all(map(lambda x: isinstance(x, (float, int)), geometry))), "'geometry' must be a [number, number, number, number]"
-    assert with_header is None or (isinstance(with_header, bool)), "'withHeader' must be boolean and must be false"
-    
     docker = next((i for i in Krita.instance().dockers() if i.objectName() == objectName), None)
     if docker is None:
         raise ResponseFail(f"No docker named '{objectName}'")
@@ -92,7 +92,7 @@ def docker_setstate(req):
     return res
 
 @route('docker/hide-all')
-def docker_hide(req):
+def docker_hide(_):
     for docker in Krita.instance().dockers():
         Krita.instance().activeWindow().dockers()[0].window()
         docker.setVisible(False)

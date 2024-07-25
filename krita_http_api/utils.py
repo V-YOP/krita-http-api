@@ -5,15 +5,13 @@ import time
 from functools import wraps
 from typing import Callable, Any, Optional
 
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QImage
 from PyQt5.QtWidgets import QInputDialog, QLineEdit, QToolButton
 
 from krita import *
 from xml.etree.ElementTree import *
 
-from PyQt5.QtCore import qInfo, qWarning, qFatal, QObject
-
-from PyQt5.QtCore import QTextCodec
+from PyQt5.QtCore import qInfo, qWarning, qFatal, QObject, QTextCodec, QByteArray, QBuffer
 
 from .Logger import Logger
 
@@ -217,3 +215,20 @@ def singleton(cls):
         return instances[cls]
 
     return get_instance
+
+def qimage_to_png_base64(image: QImage) -> str:
+    """
+    convert QImage to png base64 string, MIME-type header included
+    """
+    # 确保图像格式为RGBA8888
+    if image.format() != QImage.Format_RGBA8888:
+        image = image.convertToFormat(QImage.Format_RGBA8888)
+    
+    # 使用QByteArray和QBuffer将QImage写入字节数组
+    byte_array = QByteArray()
+    buffer = QBuffer(byte_array)
+    buffer.open(QBuffer.WriteOnly)
+    image.save(buffer, 'PNG')
+    buffer.close()
+    
+    return 'data:image/png;base64,' + str(byte_array.toBase64(), 'utf-8')

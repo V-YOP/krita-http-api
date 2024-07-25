@@ -2,6 +2,7 @@
 from .Logger import Logger
 from typing import Any, Callable, Union
 import inspect
+from .json_validate import json_validate, ValidationError
 
 class ResponseFail(Exception):
     def __init__(self, msg: str, res = None, *args: object) -> None:
@@ -36,9 +37,17 @@ class HttpRouter:
         if req['code'] not in self.routers:
             return fail(f"route '{req['code']}' is not defined. valid routes: {list(self.routers.keys())}", None)
         logger.info(f"request '{req['code']}', param: {req['param']}")
-        self.routers[req['code']](req['param'], ok, fail)
+        router, req_shape = self.routers[req['code']]
+        
+        if req_shape is not None:
+            try:
+                json_validate(req['param'], req_shape, 'param')
+            except ValidationError as e:
+                return fail(e.msg, None)
+        
+        router(req['param'], ok, fail)
 
-    def add_route(self, code: str, cb: Union[Callable[[Any], Any], Callable[[Any, Callable[[dict], None], Callable[[dict], None]], None]]):
+    def add_route(self, code: str, cb: Union[Callable[[Any], Any], Callable[[Any, Callable[[dict], None], Callable[[dict], None]], None]], req_shape = None):
         if code in self.routers:
             raise KeyError(f"route code '{code}' duplicated")
         
@@ -50,7 +59,7 @@ class HttpRouter:
         if param_len not in (1, 3):
             raise ValueError(f"route code '{code}' cb must have 1 (sync) or 3 (async) parameters, but got {param_len}")
         
-        self.routers[code] = cb
+        self.routers[code] = (cb, req_shape)
         if param_len == 1:
             def go(req, ok, fail):
                 try:
@@ -60,4 +69,4 @@ class HttpRouter:
                         fail(e.msg, e.res)
                     else:
                         fail(f"request '{code}' failed", None)
-            self.routers[code] = go
+            self.routers[code] = (go, req_shape)

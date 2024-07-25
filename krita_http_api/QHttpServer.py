@@ -9,7 +9,13 @@ from PyQt5.QtWidgets import QApplication
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+
 from .Logger import Logger
+
+
+
+
 logger = Logger("QHttpServer")
 
 # biz code timeout (ms)
@@ -162,6 +168,7 @@ class ServerThread(QThread):
     def run(self):
         server_address = ('', self.port)
         httpd = ThreadingHTTPServer(server_address, RequestHandler)
+        httpd.request_queue_size
         httpd.signal_handler = self.signal_handler
         logger.info(f'Starting httpd server on port {self.port}...')
         httpd.serve_forever()
