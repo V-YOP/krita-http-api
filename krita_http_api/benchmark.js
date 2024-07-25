@@ -7,14 +7,14 @@ const semaphare = mkSemaphare(8)
 
 // code -> param
 const ROUTES = {
-    'ping': () => ({}),  
-    // 'state/get': () => ({}),
-    // 'docker/list': () => ({}),
-    // 'docker/set-state':  () => ({
-    //     "objectName": "MyToolbox",
-    //     "visible": true,
-    //     "floating": true
-    // }),
+    'ping': () => (''),  
+    'state/get': () => (''),
+    'docker/list': () => (''),
+    'docker/set-state':  () => ({
+        "objectName": "MyToolbox",
+        "visible": true,
+        "floating": true
+    }),
     // 'state/set': () => ({
     //     brushPreset: '粗糙硬边',
     //     foreground: [Math.random(), Math.random(),Math.random(),Math.random()],

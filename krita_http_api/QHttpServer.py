@@ -98,7 +98,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         timeout_timer.timeout.connect(go)
         timeout_timer.start(BIZ_TIMEOUT)  # Timeout set to 5000 milliseconds (5 seconds)
         loop.exec_()
+        loop.deleteLater()
+        del loop
         timeout_timer.stop()
+        timeout_timer.deleteLater()
+        del timeout_timer
+        self.server.signal_handler.result_ready.disconnect(on_result_ready)
 
         if timeout:
             return self.send_json_error(f"respond timeout for {BIZ_TIMEOUT} ms, check your biz code! request body: {request_body_str}")
@@ -168,7 +173,6 @@ class ServerThread(QThread):
     def run(self):
         server_address = ('', self.port)
         httpd = ThreadingHTTPServer(server_address, RequestHandler)
-        httpd.request_queue_size
         httpd.signal_handler = self.signal_handler
         logger.info(f'Starting httpd server on port {self.port}...')
         httpd.serve_forever()
