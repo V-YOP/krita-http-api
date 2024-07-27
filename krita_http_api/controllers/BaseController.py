@@ -18,6 +18,14 @@ def ping(req):
         'req': req,
     }
 
+@route('resource-icon', {
+    'resourceType': str,
+    'resourceName': str,
+})
+def resourceIcon(req):
+    resource = Krita.instance().resources(req['resourceType'])[req['resourceName']]
+    return qimage_to_png_base64(resource.image())
+
 @route('icon', {
     'iconName': str,
     'size': Nullable((int, int)),

@@ -6,7 +6,8 @@ from functools import wraps
 from typing import Callable, Any, Optional
 
 from PyQt5.QtGui import QIcon, QImage
-from PyQt5.QtWidgets import QInputDialog, QLineEdit, QToolButton
+
+from PyQt5.QtWidgets import QInputDialog, QLineEdit, QToolButton, QAction
 
 from krita import *
 from xml.etree.ElementTree import *
@@ -232,3 +233,58 @@ def qimage_to_png_base64(image: QImage) -> str:
     buffer.close()
     
     return 'data:image/png;base64,' + str(byte_array.toBase64(), 'utf-8')
+
+
+
+def __get_menu_structure(menu):
+    structure = []
+    for action in menu.actions():
+        if action.menu():  # If the action has a submenu
+            structure.append(__get_menu_structure(action.menu()))
+        else:
+            structure.append(action)
+    return structure
+
+def __get_menubar_structure(menubar):
+    structure = []
+    for action in menubar.actions():
+        if action.menu():  # If the action has a submenu
+            structure.append(__get_menu_structure(action.menu()))
+    return structure
+
+
+# window objectName to menu structure
+__menu_structure = {}
+def get_menus():
+    """
+    菜单树结构，元素为：
+    type Res = Node[]
+    type Node = QAction | Node[]
+    """
+    win = Krita.instance().activeWindow().qwindow()
+    name = win.objectName()
+    if name in __menu_structure:
+        return __menu_structure[name]
+    
+    __menu_structure[name] = __get_menu_structure(win.menuBar())
+    return __menu_structure[name]
+
+def get_active_theme() -> str:
+    themes: list[QAction] = get_menus()[8][10]
+    return next((x.text() for x in themes if x.isChecked()), None)
+
+
+def menu_desc(lst, parent_idx = None):
+    if parent_idx is None:
+        parent_idx = []
+
+    res = []
+    for i, menu_item in enumerate(lst):
+        if isinstance(menu_item, list):
+            res.append(menu_desc(menu_item, [*parent_idx, i]))
+        else:
+            res.append(menu_item.objectName() + ': ' + '-'.join(map(str,[*parent_idx, i])))
+    return res
+
+def uniq(lst):
+    return list(dict.fromkeys(lst))

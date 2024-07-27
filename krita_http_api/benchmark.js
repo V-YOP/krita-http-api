@@ -15,6 +15,7 @@ const ROUTES = {
         "visible": true,
         "floating": true
     }),
+    'action/listen': () => ''
     // 'state/set': () => ({
     //     brushPreset: '粗糙硬边',
     //     foreground: [Math.random(), Math.random(),Math.random(),Math.random()],

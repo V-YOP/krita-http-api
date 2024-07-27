@@ -9,7 +9,7 @@ from .route import route, router
 from typing import Any, Tuple
 from krita import *
 from ..utils import *
-from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication, QMainWindow
 
 @route('state/get', {''})
 def state_get(_):
@@ -32,8 +32,8 @@ def state_get(_):
     doc = view.document()
     fname = doc.fileName()
     res['fileName'] = fname if fname != '' else None
-    # res['theme'] = get_theme()
-
+    res['theme'] = get_active_theme()
+    res['zoomFactor'] = QApplication.primaryScreen().devicePixelRatio()
     return res
 
 @route('state/set', {
@@ -121,29 +121,29 @@ def state_set(req):
     return res
 
 
-DARK_SELECT_ICON_10x10_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAABYlAAAWJQFJUiTwAAAAr0lEQVQYlYXMMQrCUBCE4X83WqTwCl4gkRSSVhAES9HaU3gSaysrwcpGEGsvkLz3TmFjZxOStbGIiGaqgfkYAEIIQ+/9mj9RgKqq1Mz23vvlX/hOZGbHoijmXRCgr6on59ykCwLEwDmEkHdBgEHTNFfn3OgXfAKY2VZEVu2h1+qPKIoWdV1fRGSapulGROzjUVWfZjZLkuQGHICsLMv86zHLsjtwBxCRnZmNVTVuwxffIz3Drn/9pAAAAABJRU5ErkJggg=='
-LIGHT_SELECT_ICON_10x10_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAABYlAAAWJQFJUiTwAAAAqElEQVQYlYXOMQrCQBCF4X/GbJHCK3gDsVhmwzaCIFiK1p7Ck1hbWQlWNoJYCyHkKGns0q5NigiSvOrBfMwMAN77WVEUBwaiAM45BS4hhN0g7DIRkVsIYTMGAZyI3M1sOQYBclV9mJmNQYCpqr5ijPO/MKXUdvUkIvv+LOv1D7AFnsCqqqojkH42qmorIuu6rt/AFVjEGH9+zADKsmyApjt/FhEP5H34Ba2XIsZQg9CnAAAAAElFTkSuQmCC'
-dark_select_cachekey = None
-light_select_cachekey = None
+# DARK_SELECT_ICON_10x10_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAABYlAAAWJQFJUiTwAAAAr0lEQVQYlYXMMQrCUBCE4X83WqTwCl4gkRSSVhAES9HaU3gSaysrwcpGEGsvkLz3TmFjZxOStbGIiGaqgfkYAEIIQ+/9mj9RgKqq1Mz23vvlX/hOZGbHoijmXRCgr6on59ykCwLEwDmEkHdBgEHTNFfn3OgXfAKY2VZEVu2h1+qPKIoWdV1fRGSapulGROzjUVWfZjZLkuQGHICsLMv86zHLsjtwBxCRnZmNVTVuwxffIz3Drn/9pAAAAABJRU5ErkJggg=='
+# LIGHT_SELECT_ICON_10x10_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAABYlAAAWJQFJUiTwAAAAqElEQVQYlYXOMQrCQBCF4X/GbJHCK3gDsVhmwzaCIFiK1p7Ck1hbWQlWNoJYCyHkKGns0q5NigiSvOrBfMwMAN77WVEUBwaiAM45BS4hhN0g7DIRkVsIYTMGAZyI3M1sOQYBclV9mJmNQYCpqr5ijPO/MKXUdvUkIvv+LOv1D7AFnsCqqqojkH42qmorIuu6rt/AFVjEGH9+zADKsmyApjt/FhEP5H34Ba2XIsZQg9CnAAAAAElFTkSuQmCC'
+# dark_select_cachekey = None
+# light_select_cachekey = None
 
-def get_theme():
-    global dark_select_cachekey, light_select_cachekey
-    select_icon = Krita.instance().icon('select')
+# def get_theme():
+#     global dark_select_cachekey, light_select_cachekey
+#     select_icon = Krita.instance().icon('select')
 
-    if select_icon.cacheKey() == dark_select_cachekey:
-        return 'dark'
-    if select_icon.cacheKey() == light_select_cachekey:
-        return 'light'
+#     if select_icon.cacheKey() == dark_select_cachekey:
+#         return 'dark'
+#     if select_icon.cacheKey() == light_select_cachekey:
+#         return 'light'
 
-    base64 = qimage_to_png_base64(select_icon.pixmap(10, 10).toImage())
-    if base64 == DARK_SELECT_ICON_10x10_BASE64: 
-        dark_select_cachekey = select_icon.cacheKey()
-        return 'dark' 
-    if base64 == LIGHT_SELECT_ICON_10x10_BASE64: 
-        light_select_cachekey = select_icon.cacheKey()
-        return 'light'
+#     base64 = qimage_to_png_base64(select_icon.pixmap(10, 10).toImage())
+#     if base64 == DARK_SELECT_ICON_10x10_BASE64: 
+#         dark_select_cachekey = select_icon.cacheKey()
+#         return 'dark' 
+#     if base64 == LIGHT_SELECT_ICON_10x10_BASE64: 
+#         light_select_cachekey = select_icon.cacheKey()
+#         return 'light'
 
-    raise Exception('unknown theme')
+#     raise Exception('unknown theme')
 
 def to_qcolor(rgba: Tuple[int,int,int,int]) -> ManagedColor:
     res = ManagedColor('RGBA', 'U8', '')

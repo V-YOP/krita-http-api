@@ -24,3 +24,4 @@ get_menubar_structure(Krita.instance().activeWindow().qwindow().menuBar())
 y = time.time()
 
 print(y - x)
+

@@ -55,11 +55,27 @@ def docker_list(_):
             res[docker.objectName()]['geometry'] = [geo.x(), geo.y(), geo.width(), geo.height()],
     return res
 
+@route('docker/get-state', str)
+def docker_list(objectName):
+    docker = next((i for i in Krita.instance().dockers() if i.objectName() == objectName), None)
+    if docker is None:
+        raise ResponseFail(f"No docker named '{objectName}'")
+    geo = docker.geometry()
+    return dict(
+        objectName=objectName,
+        visible=docker.isVisible(),
+        floating=docker.isFloating(),
+        pos=[geo.x(), geo.y()],
+        size=[geo.width(), geo.height()],
+        withHeader=not docker_headless(docker)
+    )
+
 @route('docker/set-state', {
     'objectName': str,
     'visible': Nullable(bool),
     'floating': Nullable(bool),
-    'geometry': Nullable((float, float, float, float)),
+    'pos': Nullable((int, int)),
+    'size': Nullable((int, int)),
     'withHeader': Nullable(bool),
 })
 def docker_setstate(req):
@@ -67,7 +83,8 @@ def docker_setstate(req):
     objectName = req['objectName']
     visible = req.get('visible')
     floating = req.get('floating')
-    geometry = req.get('geometry')
+    pos = req.get('pos')
+    size = req.get('size')
     with_header = req.get('withHeader')
 
     docker = next((i for i in Krita.instance().dockers() if i.objectName() == objectName), None)
@@ -83,9 +100,22 @@ def docker_setstate(req):
     if floating is not None:
         docker.setFloating(floating)
         res['floating'] = floating
-    if geometry is not None:
-        docker.setGeometry(QRect(*geometry))
-        res['geometry'] = geometry
+
+    if pos is not None or size is not None:
+        geo = docker.geometry()
+        res['oldgeo'] = [geo.x(), geo.y(), geo.width(), geo.height()]
+        if pos is not None:
+            geo.setX(pos[0])
+            geo.setY(pos[1])
+            res['pos'] = pos
+        if size is not None:
+            geo.setWidth(size[0])
+            geo.setHeight(size[1])
+            res['size'] = size
+        docker.setGeometry(geo)
+        docker.repaint()
+        geo = docker.geometry()
+        res['newgeo'] = [geo.x(), geo.y(), geo.width(), geo.height()]
 
     if with_header is not None:
         set_docker_headless(docker, not with_header)
