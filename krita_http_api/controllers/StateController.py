@@ -31,9 +31,12 @@ def state_get(_):
     res['canvasOnly'] = Krita.instance().action("view_show_canvas_only").isChecked()
     doc = view.document()
     fname = doc.fileName()
+    doc_info = DocumentInfo.from_document(doc)
+    res['editTime'] = doc_info.edit_time
     res['fileName'] = fname if fname != '' else None
     res['theme'] = get_active_theme()
     res['zoomFactor'] = QApplication.primaryScreen().devicePixelRatio()
+
     return res
 
 @route('state/set', {

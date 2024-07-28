@@ -7,16 +7,7 @@ from .route import route, router
 from typing import Any
 from krita import *
 from ..utils import *
-from PyQt5.QtCore import QTimer, QByteArray, QBuffer, QSize
-from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QApplication
-
-@route('ping')
-def ping(req):
-    return {
-        'msg': 'pong',
-        'req': req,
-    }
+from PyQt5.QtCore import QTimer, QSize
 
 @route('resource-icon', {
     'resourceType': str,
@@ -25,6 +16,24 @@ def ping(req):
 def resourceIcon(req):
     resource = Krita.instance().resources(req['resourceType'])[req['resourceName']]
     return qimage_to_png_base64(resource.image())
+
+
+@route('floating-message', {
+    'message': str,
+    'timeout': Nullable(int),
+    'priority': Nullable(int),
+})
+def current_tool_get(req):
+    return floating_message(**req)
+
+@route('ping')
+def ping(req):
+    return {
+        'msg': 'pong',
+        'req': req,
+    }
+
+
 
 @route('icon', {
     'iconName': str,
@@ -71,13 +80,7 @@ def icon(req):
 def route_list(_):
     return list(router.routers.keys())
 
-@route('floating-message', {
-    'message': str,
-    'timeout': Nullable(int),
-    'priority': Nullable(int),
-})
-def current_tool_get(req):
-    return floating_message(**req)
+
 
 @route('sync-test')
 def sync_test(req):

@@ -2,7 +2,7 @@
 
 const PORT = 1976
 const PARALLEL_NUM = 1
-const REQUEST_BATCH_SIZE = 1000
+const REQUEST_BATCH_SIZE = 10000
 const semaphare = mkSemaphare(8)
 
 // code -> param
