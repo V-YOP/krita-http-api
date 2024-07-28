@@ -5,15 +5,67 @@ which will read request body and respond a json.</p>
 <h1 id="usage">Usage</h1>
 <ol type="1">
 <li>Download this repo as ZIP and Open Krita, import it via menu
-‘Tools/Scripts/Import Python Plugin from File’.</li>
-<li>restart Krita, open a document</li>
+‘Tools/Scripts/Import Python Plugin from File’ and make sure plugin
+‘HTTP API’ is enabled.</li>
+<li>restart Krita, <strong>open a document</strong></li>
 <li>execute
 <code>curl -d '{"code": "floating-message", "param": {"message": "Hello, World!"} }' localhost:1976</code></li>
 </ol>
-<p>If you need add more API, just modify the variable
-<code>ROUTERS</code> in <code>HttpRouter.py</code>. eg:</p>
+<p>In default it will listen port 1976 and it’s not configurable, modify
+source code if you need change it.</p>
+<p>If you need add more API, just add more “controller”s in
+<code>./controllers</code>. both sync style and async style(like
+express.js) API is provided. there’s a example for an API definition and
+implementation.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ..json_validate <span class="im">import</span> Nullable</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .route <span class="im">import</span> route, router</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> krita <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">@route</span>(<span class="st">&#39;resource-icon&#39;</span>, {</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;resourceType&#39;</span>: <span class="bu">str</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;resourceName&#39;</span>: <span class="bu">str</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;withMIMEType&#39;</span>: Nullable(<span class="bu">bool</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> resourceIcon(req):</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    resource <span class="op">=</span> Krita.instance().resources(req[<span class="st">&#39;resourceType&#39;</span>])[req[<span class="st">&#39;resourceName&#39;</span>]]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> qimage_to_png_base64(resource.image(), req.get(<span class="st">&#39;withMIMEType&#39;</span>))</span></code></pre></div>
+<p>the request and response type would be (in typescript style):</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> RequestBody <span class="op">=</span> {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    code<span class="op">:</span> <span class="st">&#39;resource-icon&#39;</span><span class="op">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    param<span class="op">:</span> {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        resourceType<span class="op">:</span> <span class="dt">string</span><span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        resourceName<span class="op">:</span> <span class="dt">string</span><span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        withMIMEType<span class="op">?:</span> <span class="dt">boolean</span> <span class="op">|</span> <span class="dt">null</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Response<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">=</span> {</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    ok<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    data<span class="op">:</span> T<span class="op">,</span> <span class="co">// at this point, is string</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>} <span class="op">|</span> {</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    ok<span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    msg<span class="op">:</span> <span class="dt">string</span><span class="op">,</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    data<span class="op">:</span> <span class="dt">unknown</span><span class="op">,</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    call_stack<span class="op">:</span> <span class="dt">string</span><span class="op">,</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>response status code will always be 200, use field ‘ok’ to check the
+request status.</p>
+<h1 id="limitation">limitation</h1>
+<ol type="1">
+<li>Sometimes it will timeout rather than throws exception when route
+code not found.</li>
+<li>Server will reject further connections when there’s already several
+(8 i guess) connections, it’s responsible for the client to limit max
+connections.</li>
+<li>The client must pull state in duration to sync states, it might be
+expensive. (but in my machine, i call ‘state/get’ in duration of 33ms
+and no performance problem found).</li>
+</ol>
 <h1 id="documentation">Documentation</h1>
-<p>TODO API Documentation</p>
+<p>TODO you may check <a
+href="https://github.com/V-YOP/krita-http-api-front">V-YOP/krita-http-api-front</a>.</p>
 <h1 id="call-flow">Call Flow</h1>
 <p>If you’d like to imporve or modify this, check this sequence diagram
 explaining the handling process of an HTTP Request.</p>
