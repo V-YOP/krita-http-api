@@ -25,8 +25,8 @@ def state_get(_):
     res['pattern'] = view.currentPattern().name()
     res['opacity'] = view.paintingOpacity()
     res['flow'] = view.paintingFlow()
-    res['foreground'] = view.foregroundColor().components()
-    res['background'] = view.backgroundColor().components()
+    res['foreground'] = view.foregroundColor().componentsOrdered()
+    res['background'] = view.backgroundColor().componentsOrdered()
     res['eraserMode'] = Krita.instance().action("erase_action").isChecked()
     res['canvasOnly'] = Krita.instance().action("view_show_canvas_only").isChecked()
     doc = view.document()
@@ -36,7 +36,9 @@ def state_get(_):
     res['fileName'] = fname if fname != '' else None
     res['theme'] = get_active_theme()
     res['zoomFactor'] = QApplication.primaryScreen().devicePixelRatio()
-
+    # when you can deselect, you have selections
+    res['withSelection'] = Krita.instance().action('deselect').isEnabled()
+    
     return res
 
 @route('state/set', {
@@ -150,7 +152,7 @@ def state_set(req):
 
 def to_qcolor(rgba: Tuple[int,int,int,int]) -> ManagedColor:
     res = ManagedColor('RGBA', 'U8', '')
-    lst = res.components()
+    lst = res.componentsOrdered()
     lst[0] = rgba[0]
     lst[1] = rgba[1]
     lst[2] = rgba[2]

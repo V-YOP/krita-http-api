@@ -1,3 +1,4 @@
+import os
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -288,3 +289,18 @@ def menu_desc(lst, parent_idx = None):
 
 def uniq(lst):
     return list(dict.fromkeys(lst))
+
+def convert_to_kra(img_path: str) -> str:
+    """转换图像文件到 kra，返回保存后文件的路径（为图像所在目录）；抛出异常如果文件不存在或非图像文件"""
+    if not os.path.isfile(img_path):
+        raise FileNotFoundError(f"file '{img_path}' doesn't exist.")
+    doc = Krita.instance().openDocument(img_path)
+    if doc is None:
+        # 如果文件非合法图像，Krita会弹窗报错并阻塞，doc会为None，考虑由用户去保证该文件时图像
+        raise RuntimeError(f"file '{img_path}' image format illegal.")
+    doc.setBatchmode(True)
+    dirname = os.path.dirname(img_path)
+    file_basename, _ = os.path.splitext(img_path)
+    if not doc.saveAs(os.path.join(dirname, f"{file_basename}.kra")):
+        raise RuntimeError("WTF?")
+    doc.close()

@@ -1,20 +1,22 @@
 // nodejs, benchmark
 
 const PORT = 1976
-const PARALLEL_NUM = 1
-const REQUEST_BATCH_SIZE = 10000
+const PARALLEL_NUM = 5
+const REQUEST_BATCH_SIZE = 1000
 const semaphare = mkSemaphare(8)
 
 // code -> param
 const ROUTES = {
     'ping': () => (''),  
+    'thread-safe-test': () => '',
     'state/get': () => (''),
     'docker/list': () => (''),
-    'docker/set-state':  () => ({
-        "objectName": "MyToolbox",
-        "visible": true,
-        "floating": true
-    }),
+    // 'docker/set-state':  () => ({
+    //     "objectName": "MyToolbox",
+    //     "visible": true,
+    //     "floating": true
+    // }),
+    'view/list': () => '',
     'action/listen': () => ''
     // 'state/set': () => ({
     //     brushPreset: '粗糙硬边',
@@ -30,12 +32,12 @@ const ROUTES = {
 
     const tasks = Object.entries(ROUTES).map(([code, param]) => async () => {
         // 热身 
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 100; i++) {
             await request(code, param())
         }
 
         const times = []
-
+        
         for (let i = 0; i < REQUEST_BATCH_SIZE; i++) {
             const tasks = []
             for (let j = 0; j < PARALLEL_NUM; j++) {
@@ -53,7 +55,6 @@ const ROUTES = {
         const average = times.reduce((a, b) => a + b, 0) / times.length
         
         console.log(`code: ${code}, average: ${average} ms, max: ${max} ms, min: ${min} ms`)
-        
     })
 
     for (const task of tasks) {

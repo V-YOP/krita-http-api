@@ -22,6 +22,7 @@ def action_list(_):
             toolTip=action.toolTip(),
             checkable=action.isCheckable(),
             checked=action.isChecked(),
+            enabled=action.isEnabled(),
         )
     return res
 

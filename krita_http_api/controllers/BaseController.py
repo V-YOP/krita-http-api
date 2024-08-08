@@ -108,3 +108,11 @@ def async_fail_test(req: Any, ok: Callable[[Any], None], fail: Callable[[str, An
 def async_timeout_test(req: Any, ok: Callable[[Any], None], fail: Callable[[str, Any], None]):
     pass
     # when ok and fail is not invoked (like you forget to call it, or some exception arised) for 5 s, it will timeout and respond a error message
+
+# 控制器中始终是单线程的，编程模型和 js 一样
+counter = 0
+@route('thread-safe-test')
+def thread_safe_test(_):
+    global counter
+    counter += 1
+    return counter
