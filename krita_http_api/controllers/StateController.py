@@ -6,39 +6,48 @@ some checked action which is useful for painting is also included, like 'canvas 
 from ..json_validate import Nullable
 from ..HttpRouter import ResponseFail
 from .route import route, router
-from typing import Any, Tuple
+from typing import Any, Tuple, List
 from krita import *
 from ..utils import *
 from PyQt5.QtWidgets import QApplication, QMainWindow
+import time
 
-@route('state/get', {''})
+@route('state/get')
 def state_get(_):
-    view = active_view()
-    if view is None:
-        raise ResponseFail("No active view")
-    res = { 'tool': current_tool() }
-    res['brushSize'] = view.brushSize()
-    res['brushRotation'] = view.brushRotation()
-    res['blendingMode'] = view.currentBlendingMode()
-    res['brushPreset'] = view.currentBrushPreset().name()
-    res['gradient'] = view.currentGradient().name()
-    res['pattern'] = view.currentPattern().name()
-    res['opacity'] = view.paintingOpacity()
-    res['flow'] = view.paintingFlow()
-    res['foreground'] = view.foregroundColor().componentsOrdered()
-    res['background'] = view.backgroundColor().componentsOrdered()
-    res['eraserMode'] = Krita.instance().action("erase_action").isChecked()
-    res['canvasOnly'] = Krita.instance().action("view_show_canvas_only").isChecked()
+    watch = TimeWatch()
+    with watch.watch('getView'):
+        view = active_view()
+        if view is None:
+            raise ResponseFail("No active view")
+    with watch.watch('tool'):
+        res = { 'tool': current_tool() }
+
+    with watch.watch('viewState'):
+        res['brushSize'] = view.brushSize()
+        res['brushRotation'] = view.brushRotation()
+        res['blendingMode'] = view.currentBlendingMode()
+        res['brushPreset'] = view.currentBrushPreset().name()
+        res['gradient'] = view.currentGradient().name()
+        res['pattern'] = view.currentPattern().name()
+        res['opacity'] = view.paintingOpacity()
+        res['flow'] = view.paintingFlow()
+        res['foreground'] = view.foregroundColor().componentsOrdered()
+        res['background'] = view.backgroundColor().componentsOrdered()
+    with watch.watch('actionState'):
+        res['eraserMode'] = Krita.instance().action("erase_action").isChecked()
+        res['canvasOnly'] = Krita.instance().action("view_show_canvas_only").isChecked()
     doc = view.document()
     fname = doc.fileName()
     doc_info = DocumentInfo.from_document(doc)
-    res['editTime'] = doc_info.edit_time
-    res['fileName'] = fname if fname != '' else None
-    res['theme'] = get_active_theme()
-    res['zoomFactor'] = QApplication.primaryScreen().devicePixelRatio()
-    # when you can deselect, you have selections
-    res['withSelection'] = Krita.instance().action('deselect').isEnabled()
-    
+    with watch.watch('documentState'):
+        res['editTime'] = doc_info.edit_time
+        res['fileName'] = fname if fname != '' else None
+        res['theme'] = get_active_theme()
+        res['zoomFactor'] = QApplication.primaryScreen().devicePixelRatio()
+        # when you can deselect, you have selections
+        res['withSelection'] = Krita.instance().action('deselect').isEnabled()
+
+    res['cost'] = watch.result()
     return res
 
 @route('state/set', {

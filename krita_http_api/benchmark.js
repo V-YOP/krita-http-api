@@ -1,23 +1,25 @@
 // nodejs, benchmark
 
 const PORT = 1976
-const PARALLEL_NUM = 5
+const PARALLEL_NUM = 1
 const REQUEST_BATCH_SIZE = 1000
 const semaphare = mkSemaphare(8)
 
 // code -> param
 const ROUTES = {
-    'ping': () => (''),  
-    'thread-safe-test': () => '',
-    'state/get': () => (''),
-    'docker/list': () => (''),
+    // 'ping': () => (''),  
+    // 'thread-safe-test': () => '',
+    // 'state/get': () => (''),
+    // 'docker/list': () => (''),
     // 'docker/set-state':  () => ({
     //     "objectName": "MyToolbox",
     //     "visible": true,
     //     "floating": true
     // }),
-    'view/list': () => '',
-    'action/listen': () => ''
+    // 'view/list': () => '',
+    // 'action/listen': () => '',
+    "document/recorders": () => '',
+    // "document/image": () => ({withImage: true}),
     // 'state/set': () => ({
     //     brushPreset: '粗糙硬边',
     //     foreground: [Math.random(), Math.random(),Math.random(),Math.random()],

@@ -8,7 +8,10 @@ from typing import Any, Tuple
 from krita import *
 from ..utils import *
 from datetime import datetime
-from PyQt5.QtCore import QObject, QTimer, QThread, pyqtSignal, QEventLoop
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from ..PerWindowCachedState import PerWindowCachedState
 from ..Logger import Logger
 
 logger = Logger()
@@ -18,9 +21,10 @@ def get_layers(_, ok, fail):
     doc = active_document()
     if doc is None:
         return fail("No active document", None)
+    doc.node
     pass
 
-    
+
 
 # class GetImageThread(QThread):
 #     request_image = pyqtSignal()
@@ -56,23 +60,23 @@ def get_layers(_, ok, fail):
 
 # __get_image_thread = None
 
-@route('document/image')
-def get_image(_, ok: Callable[[Any], None], fail: Callable[[str, Any], None]):
-    if not Krita.instance().action('recorder_record_toggle').isChecked:
-        return fail('not recording.', None)
+# @route('document/image')
+# def get_image(_, ok: Callable[[Any], None], fail: Callable[[str, Any], None]):
+#     if not Krita.instance().action('recorder_record_toggle').isChecked:
+#         return fail('not recording.', None)
     
-    doc = active_document()
-    if doc is None:
-        return fail("No active document", None)
-    # if doc.colorDepth() != 'U8' or doc.colorModel() != 'RGBA':
-    #     return fail(f"Only RGBA 8-bit is supported, got {doc.colorModel} {doc.colorDepth}", None)
-    w = doc.width()
-    h = doc.height()
-    depth = doc.colorDepth()
-    model = doc.colorModel()
+#     doc = active_document()
+#     if doc is None:
+#         return fail("No active document", None)
+#     # if doc.colorDepth() != 'U8' or doc.colorModel() != 'RGBA':
+#     #     return fail(f"Only RGBA 8-bit is supported, got {doc.colorModel} {doc.colorDepth}", None)
+#     w = doc.width()
+#     h = doc.height()
+#     depth = doc.colorDepth()
+#     model = doc.colorModel()
 
 
-    pass
+#     pass
     # global __get_image_thread
     # if __get_image_thread is None:
     #     __get_image_thread = GetImageThread()
@@ -109,3 +113,68 @@ def get_image(_, ok: Callable[[Any], None], fail: Callable[[str, Any], None]):
     #         'cost': int((pixel_data_end - pixel_data_start) * 1000), 
     #     })
     # __get_image_thread.image_ready.connect(go)
+
+
+# useless...
+@route('document/image', {
+    'withImage': bool
+})
+def get_image(req, ok: Callable[[Any], None], fail: Callable[[str, Any], None]):
+    doc = active_document()
+    if doc is None:
+        return fail("No active document", None)
+    # if doc.colorDepth() != 'U8' or doc.colorModel() != 'RGBA':
+    #     return fail(f"Only RGBA 8-bit is supported, got {doc.colorModel} {doc.colorDepth}", None)
+    w = doc.width()
+    h = doc.height()
+    depth = doc.colorDepth()
+    model = doc.colorModel()
+
+    a = datetime.now().timestamp()
+    pixel_data = doc.pixelData(0, 0, w, h)
+    b = datetime.now().timestamp()
+    base64=str(pixel_data.toBase64(), 'utf-8')
+    c = datetime.now().timestamp()
+    res = dict(
+        w=w,h=h,depth=depth,model=model,getPixelBytesCost=round((b-a) * 1000),getBase64Cost=round((c-b) * 1000)
+    )
+    if req['withImage']:
+        res['base64']=base64
+    ok(res)
+    
+
+def __get_record_dir(window: Window):
+    recorder_docker = next((i for i in window.dockers() if i.objectName() == 'RecorderDocker'))
+    dir_obj = recorder_docker.findChild(QLineEdit,'editDirectory')
+    return dir_obj
+
+__recorder_dir_widget = PerWindowCachedState(__get_record_dir)
+
+
+@route('document/records')
+def image_path(_,ok,fail):
+    doc = active_document()
+    if doc is None:
+        return fail("No active document", None)
+    
+    if not Krita.instance().action('recorder_record_toggle').isChecked:
+        return fail('not recording.', None)
+    
+    dir_obj = __recorder_dir_widget.get(Krita.instance().activeWindow())
+    record_directory = dir_obj.text()
+
+    # if doc.colorDepth() != 'U8' or doc.colorModel() != 'RGBA':
+    #     return fail(f"Only RGBA 8-bit is supported, got {doc.colorModel} {doc.colorDepth}", None)
+    w = doc.width()
+    h = doc.height()
+    depth = doc.colorDepth()
+    model = doc.colorModel()
+    formatted_date = DocumentInfo.from_document(doc).create_date.strftime('%Y%m%d%H%M%S')
+    doc_record_path = os.path.join(record_directory,formatted_date).replace('\\', '/')
+    
+    if not os.path.exists(doc_record_path):
+        return fail('No record yet.', None)
+    
+    return ok(dict(
+        w=w,h=h,depth=depth,model=model,path=doc_record_path,records=os.listdir(doc_record_path)
+    ))

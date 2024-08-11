@@ -4,7 +4,7 @@ basic API, like health check, API list, display floating message and some test A
 from ..json_validate import Nullable
 from ..HttpRouter import ResponseFail
 from .route import route, router
-from typing import Any
+from typing import Any, Generic, TypeVar
 from krita import *
 from ..utils import *
 from PyQt5.QtCore import QTimer, QSize
@@ -32,7 +32,6 @@ def ping(req):
         'msg': 'pong',
         'req': req,
     }
-
 
 
 @route('icon', {

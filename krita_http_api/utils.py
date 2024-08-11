@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import time
 from functools import wraps
-from typing import Callable, Any, Optional
+from typing import Callable, Any, List, Optional
 
 from PyQt5.QtGui import QIcon, QImage
 
@@ -304,3 +304,32 @@ def convert_to_kra(img_path: str) -> str:
     if not doc.saveAs(os.path.join(dirname, f"{file_basename}.kra")):
         raise RuntimeError("WTF?")
     doc.close()
+
+class TimeWatch:
+    def __init__(self) -> None:
+        self.times: dict[str, List[int] | int] = {}
+
+    def watch(self,name: str):
+        that = self
+        class __MeasureMe:
+            def __init__(self) -> None:
+                self.start = None
+            def __enter__(self):
+                self.start = time.perf_counter() 
+            def __exit__(self, *arg):
+                end = time.perf_counter()
+                res = round((end - self.start) * 1000, 3)
+                if name not in that.times: 
+                    that.times[name] = res
+                else:
+                    if isinstance(that.times[name], list):
+                        that.times[name].append(res)
+                    else:
+                        that.times[name] = [that.times[name], res]
+                
+        return __MeasureMe()
+    
+    def result(self):
+        return self.times
+    
+
