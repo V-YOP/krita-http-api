@@ -2,6 +2,8 @@
 
 Expose Krita API by a HTTP Server, which relies on python standard module `http.server`. it's a multi-threaded BIO HTTP server, which will read request body and respond a json.
 
+~~I'm going to replace it with a websocket server for better performance and let krita can push message.~~
+
 # Usage
 
 1. Download this repo as ZIP and Open Krita, import it via menu 'Tools/Scripts/Import Python Plugin from File' and make sure plugin 'HTTP API' is enabled.

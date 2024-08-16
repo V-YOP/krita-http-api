@@ -1,1 +1,1 @@
-pip install --target=./third_deps Flask
+pip install --target=./third_deps websockets

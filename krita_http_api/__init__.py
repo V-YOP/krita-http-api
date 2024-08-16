@@ -1,6 +1,6 @@
 import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'third_deps'))
+import os.path as path
+sys.path.insert(0, path.join(path.dirname(path.abspath(__file__)), 'third_deps'))
+sys.path.insert(0, path.dirname(path.dirname(path.abspath(__file__))))
 from .krita_http_api import *
 
