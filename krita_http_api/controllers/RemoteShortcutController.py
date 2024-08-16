@@ -22,7 +22,6 @@ def current_shortcut(_):
 def shortcut_list(_):
     pass
 
-
 @route('remote-shortcut/register', {
     'actionId': str,
     'shortcut': str,
@@ -34,3 +33,4 @@ def shortcut_register(req):
 @route('remote-shortcut/remove')
 def a(_):
     pass
+

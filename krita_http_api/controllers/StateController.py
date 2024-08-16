@@ -12,6 +12,7 @@ from ..utils import *
 from PyQt5.QtWidgets import QApplication, QMainWindow
 import time
 
+
 @route('state/get')
 def state_get(_):
     watch = TimeWatch()
@@ -19,6 +20,7 @@ def state_get(_):
         view = active_view()
         if view is None:
             raise ResponseFail("No active view")
+        
     with watch.watch('tool'):
         res = { 'tool': current_tool() }
 
@@ -33,19 +35,38 @@ def state_get(_):
         res['flow'] = view.paintingFlow()
         res['foreground'] = view.foregroundColor().componentsOrdered()
         res['background'] = view.backgroundColor().componentsOrdered()
+
     with watch.watch('actionState'):
         res['eraserMode'] = Krita.instance().action("erase_action").isChecked()
         res['canvasOnly'] = Krita.instance().action("view_show_canvas_only").isChecked()
-    doc = view.document()
-    fname = doc.fileName()
-    doc_info = DocumentInfo.from_document(doc)
-    with watch.watch('documentState'):
-        res['editTime'] = doc_info.edit_time
-        res['fileName'] = fname if fname != '' else None
-        res['theme'] = get_active_theme()
+
+    with watch.watch('globalState'):
         res['zoomFactor'] = QApplication.primaryScreen().devicePixelRatio()
+        res['theme'] = get_active_theme()
+
+    with watch.watch('documentState'):
+        doc = view.document()
+        fname = doc.fileName()
+        # doc_info = DocumentInfo.from_document(doc)
+        # res['editTime'] = doc_info.edit_time
+        res['fileName'] = fname if fname != '' else None
         # when you can deselect, you have selections
         res['withSelection'] = Krita.instance().action('deselect').isEnabled()
+        w = doc.width()
+        h = doc.height()
+        res['picResolution'] = [w, h]
+
+    with watch.watch('toolOption-' + res['tool']):
+        res['toolOptions'] = get_tool_option_state(res['tool'])
+
+    with watch.watch('layersState'):
+        res['activeLayer'] = None
+        if node := doc.activeNode():
+            res['activeLayer'] = {
+                'activeLayerName': node.name(),
+                'activeLayerMode': node.blendingMode(),
+                'activeLayerOpacity': node.opacity(),
+            }
 
     res['cost'] = watch.result()
     return res
@@ -169,3 +190,41 @@ def to_qcolor(rgba: Tuple[int,int,int,int]) -> ManagedColor:
     res.setComponents(lst)
     return res
     
+# 选取工具的动作选项
+SELECT_ACTIONS_TOOLTIP_REVERSE = {
+    Krita.instance().krita_i18nc('@info:tooltip', action): action
+    for action in ['Replace', 'Intersect', 'Add', 'Subtract', 'Symmetric Difference']
+}
+# 选取工具的模式选项
+SELECT_MODE_TOOLTIP_REVERSE = {
+    Krita.instance().krita_i18nc('@info:tooltip', action): action
+    for action in ['Pixel Selection', 'Vector Selection']
+}
+select_tool_option_select_btns = tool_option_widget.chain(lambda parent: [i for i in parent.findChildren(QToolButton) if i.toolTip() in SELECT_ACTIONS_TOOLTIP_REVERSE])
+select_tool_option_mode_btns = tool_option_widget.chain(lambda parent: [i for i in parent.findChildren(QToolButton) if i.toolTip() in SELECT_MODE_TOOLTIP_REVERSE])
+
+def get_tool_option_state(tool: str) -> dict:
+    res = {}
+    match tool:
+        case "KritaShape/KisToolBrush":
+            pass
+        case x if x in ('KisToolSelectOutline',
+                'KisToolSelectElliptical',
+                'KisToolSelectRectangular',
+                'KisToolSelectPolygonal',
+                'KisToolSelectSimilar',
+                'KisToolSelectMagnetic'):
+            res['type'] = 'SELECT_TOOL'
+
+            # actions
+            for btn in select_tool_option_select_btns.get(Krita.instance().activeWindow()):
+                if btn.isChecked():
+                    res['selectAction'] = SELECT_ACTIONS_TOOLTIP_REVERSE[btn.toolTip()]
+                    break
+            # modes
+            for btn in select_tool_option_mode_btns.get(Krita.instance().activeWindow()):
+                if btn.isChecked():
+                    res['selectMode'] = SELECT_MODE_TOOLTIP_REVERSE[btn.toolTip()]
+                    break
+
+    return res

@@ -4,16 +4,18 @@ from dataclasses import dataclass
 from datetime import datetime
 import time
 from functools import wraps
-from typing import Callable, Any, List, Optional
+from typing import Callable, Any, Dict, List, Optional, Type, TypeVar
 
 from PyQt5.QtGui import QIcon, QImage
 
-from PyQt5.QtWidgets import QInputDialog, QLineEdit, QToolButton, QAction
+from PyQt5.QtWidgets import QInputDialog, QLineEdit, QToolButton, QAction, QWidget
 
 from krita import *
 from xml.etree.ElementTree import *
 
 from PyQt5.QtCore import qInfo, qWarning, qFatal, QObject, QTextCodec, QByteArray, QBuffer
+
+from .PerWindowCachedState import PerWindowCachedState
 
 from .Logger import Logger
 
@@ -47,9 +49,9 @@ def floating_message(message: str, icon=QIcon(), timeout=3000, priority=2) -> bo
     :return: return true if display message successfully
     """
     if active_document() is None:
-        logger.info(f"cannot display floating message cause no active document")
+        # logger.info(f"cannot display floating message cause no active document")
         return False
-    logger.info(f"display floating message, msg: {message}")
+    # logger.info(f"display floating message, msg: {message}")
     active_view().showFloatingMessage(message, icon, timeout, priority)
     return True
 
@@ -130,7 +132,7 @@ def timemeter(func):
         start_time = datetime.now()
         func(*args, **kwargs)
         end_time = datetime.now()
-        logger.info(f'call {func.__name__} cost: {end_time - start_time}')
+        # logger.info(f'call {func.__name__} cost: {end_time - start_time}')
 
     return wrapper
 
@@ -176,7 +178,6 @@ class DocumentInfo:
     create_date: datetime
     update_date: datetime
     document: Document
-
 
     @staticmethod
     def from_document(document: Document) -> Optional["DocumentInfo"]:
@@ -305,31 +306,81 @@ def convert_to_kra(img_path: str) -> str:
         raise RuntimeError("WTF?")
     doc.close()
 
+
 class TimeWatch:
     def __init__(self) -> None:
-        self.times: dict[str, List[int] | int] = {}
+        self.times: Dict[str, List[float]] = {}
 
-    def watch(self,name: str):
+    def watch(self, name: str):
         that = self
         class __MeasureMe:
             def __init__(self) -> None:
                 self.start = None
+
             def __enter__(self):
-                self.start = time.perf_counter() 
+                self.start = time.perf_counter()
+
             def __exit__(self, *arg):
                 end = time.perf_counter()
                 res = round((end - self.start) * 1000, 3)
-                if name not in that.times: 
-                    that.times[name] = res
+                if name not in that.times:
+                    that.times[name] = [res]
                 else:
-                    if isinstance(that.times[name], list):
-                        that.times[name].append(res)
-                    else:
-                        that.times[name] = [that.times[name], res]
-                
+                    that.times[name].append(res)
+
         return __MeasureMe()
-    
-    def result(self):
-        return self.times
+
+    def result(self) -> Dict[str, Dict[str, float]]:
+        detailed_result = {}
+        for name, values in self.times.items():
+            if len(values) <= 1:
+                continue
+            values = values[1:]
+            average = sum(values) / len(values)
+            maximum = max(values)
+            minimum = min(values)
+
+            detailed_result[name] = {
+                'average': average,
+                'maximum': maximum,
+                'minimum': minimum,
+                'count': len(values) if isinstance(values, list) else 1
+            }
+        return detailed_result
     
 
+T = TypeVar('T', bound=QWidget)
+def find_widget_by_tooltip(parent: QWidget, type: Type[T], tooltip: str) -> T:
+    res = []
+    for child in parent.findChildren(type):
+        if tooltip == child.toolTip():
+            res.append(child)
+    if len(res) == 0:
+        return 
+    return res[0] # TODO raise exception when multiple results?
+
+# works for every tool except Select Shapes Tool
+def __get_tool_option_widget_wrapper(window: Window) -> QWidget:
+    """
+    return a Qwidget, whose last children would be current tool option widget
+    """
+    for tool_option_docker in window.dockers():
+        if tool_option_docker.objectName() == "sharedtooldocker":
+            break
+    box = tool_option_docker.children()[4].children()[0].children()[0]
+    return box 
+    # if len(box) == 1:
+    #     return 
+    
+    # print(box[-1].objectName())
+    # return box[-1]
+
+tool_option_widget = PerWindowCachedState(__get_tool_option_widget_wrapper)
+
+
+
+# pixel_selection = find_widget_by_tooltip(tool_option_docker, QToolButton, Krita.instance().krita_i18nc("@info:tooltip", "Pixel Selection"))
+# vector_selection = find_widget_by_tooltip(tool_option_docker, QToolButton, Krita.instance().krita_i18nc("@info:tooltip", 'Vector Selection'))
+
+# print(f"{pixel_selection.isChecked()=}")
+# print(f"{vector_selection.isChecked()=}")
