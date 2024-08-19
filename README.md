@@ -7,11 +7,11 @@ Expose Krita API by a HTTP Server and a websocket server)optional). The HTTP Ser
 # Usage
 
 1. Download this repo as ZIP and Open Krita, import it via menu 'Tools/Scripts/Import Python Plugin from File' and make sure plugin 'HTTP API' is enabled.
-2. (optional) if you need websocket server, cd to directory where `__init__.py` belongs to, run `pip install --target=./third_deps websockets`. websocket server will listen port 1949.
+2. (optional) if you need websocket server, cd to directory where `__init__.py` belongs to, run `pip install --target=./third_deps websockets`.
 3. restart Krita, **open a document**
 4. execute `curl -d '{"code": "floating-message", "param": {"message": "Hello, World!"} }' localhost:1976`
 
-In default it will listen port 1976 and it's not configurable, modify source code if you need change it.
+The HTTP server will listen port 1976, websocket server will listen port 1949. it's not configurable, modify source code if you need change it.
 
 If you need add more API, just add more "controller"s in `./controllers`. both sync style and async style(like express.js) API is provided. there's a example for an API definition and implementation. 
 
@@ -27,7 +27,7 @@ from krita import *
 })
 def resourceIcon(req):
     resource = Krita.instance().resources(req['resourceType'])[req['resourceName']]
-    return qimage_to_png_base64(resource.image(), req.get('withMIMEType'))
+    return qimage_to_png_base64(resource.image(), req.get('withMIMEType', True))
 ```
 
 the request and response type would be (in typescript style):
@@ -57,6 +57,8 @@ type Response<T> = {
 response status code will always be 200, use field 'ok' to check the request status.
 
 # limitation
+
+For the http server:
 
 1. Sometimes it will timeout rather than throws exception when route code not found.
 2. Server will reject further connections when there's already several (8 i guess) connections, it's responsible for the client to limit max connections.
