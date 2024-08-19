@@ -1,5 +1,4 @@
 from krita import *
-from .QWebsocketServer import QWebsocketServer
 from .QHttpServer import QHTTPServer
 from .utils import *
 from PyQt5.QtCore import *
@@ -17,15 +16,22 @@ class krita_http_api(Extension):
         # self.http_server.setParent(self)
         self.http_server.on_request(router)
         self.server_started = False
-        self.socket_server = QWebsocketServer(1949)
-        self.socket_server.on_request(router)
+
+        self.socket_server = None
+        try:
+            from .QWebsocketServer import QWebsocketServer
+            self.socket_server = QWebsocketServer(1949)
+            self.socket_server.on_request(router)
+        except ImportError:
+            pass
 
     def setup(self):
         pass
 
     def createActions(self, window):
         if not self.server_started:
-            self.socket_server.start()
+            if self.socket_server is not None:
+                self.socket_server.start()
             self.http_server.start()
             self.server_started = True
 

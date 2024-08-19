@@ -1,1 +1,0 @@
-pip install --target=./third_deps websockets

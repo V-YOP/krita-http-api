@@ -7,8 +7,6 @@ from krita import *
 from .utils import *
 from PyQt5.QtCore import *
 
-
-
 # 创建一个 Semaphore 对象，限制最大并发任务数
 MAX_CONCURRENT_TASKS = 10
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
@@ -24,6 +22,7 @@ class SignalHandler(QObject):
     def result_ready_emit(self, body):
         print('result_ready: me dynamicly emit')
         self.result_ready.emit(body)
+        
     @pyqtSlot(object)
     def result_ready_connect(self, go):
         print('result_ready: me dynamicly connect')
@@ -114,28 +113,38 @@ class QWebsocketServer(QThread):
         assert cb is not None
         def resolve(msg: dict):
             self.__signal_handler.result_ready.emit(json.dumps(msg)) 
-        def ok(res):
-            resolve({
-                'ok': True,
-                'data': res
-            })
-        def fail(msg, res):
-            stack_trace = traceback.format_exc()
-            resolve({
-                'ok': False,
-                'msg': msg,
-                'data': res,
-                'call_stack': stack_trace,
-            })
 
+        def cbs(request_id: str):
+            def ok(res):
+                resolve({
+                    'ok': True,
+                    'data': res,
+                    'request_id': request_id,
+                })
+            def fail(msg, res):
+                stack_trace = traceback.format_exc()
+                resolve({
+                    'ok': False,
+                    'msg': msg,
+                    'data': res,
+                    'call_stack': stack_trace,
+                    'request_id': request_id,
+                })
+            return ok, fail
+        
         def __on_request(request_body):
-            # at Qt Event Loop here
             print('new_request emitted, (i.e. emit result_ready) with request:', request_body)
             try:
                 request_json = json.loads(request_body)
             except:
-                return fail("expect a json object, got ...(check 'data' field)", request_body)
-            return cb(request_json, ok, fail) 
+                # shoudl never be here, otherwise everything will messed up
+                return resolve({
+                    'ok': False,
+                    'msg': "expect a json object, got ...(check 'data' field)",
+                    'data': request_body,
+                    'request_id': '',
+                })
+            return cb(request_json, *cbs(request_json.get('request_id', ''))) 
             
         self.__request_handler = __on_request
         self.__signal_handler.new_request.connect(self.__request_handler)

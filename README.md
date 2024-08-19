@@ -1,14 +1,15 @@
 # Krita HTTP API
 
-Expose Krita API by a HTTP Server, which relies on python standard module `http.server`. it's a multi-threaded BIO HTTP server, which will read request body and respond a json.
+Expose Krita API by a HTTP Server and a websocket server)optional). The HTTP Server relies on python standard module `http.server`, a multi-threaded BIO HTTP server, which will read request body and respond a json. 
 
 ~~I'm going to replace it with a websocket server for better performance and let krita can push message.~~
 
 # Usage
 
 1. Download this repo as ZIP and Open Krita, import it via menu 'Tools/Scripts/Import Python Plugin from File' and make sure plugin 'HTTP API' is enabled.
-2. restart Krita, **open a document**
-3. execute `curl -d '{"code": "floating-message", "param": {"message": "Hello, World!"} }' localhost:1976`
+2. (optional) if you need websocket server, cd to directory where `__init__.py` belongs to, run `pip install --target=./third_deps websockets`. websocket server will listen port 1949.
+3. restart Krita, **open a document**
+4. execute `curl -d '{"code": "floating-message", "param": {"message": "Hello, World!"} }' localhost:1976`
 
 In default it will listen port 1976 and it's not configurable, modify source code if you need change it.
 
