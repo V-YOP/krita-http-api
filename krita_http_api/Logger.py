@@ -1,11 +1,7 @@
 from datetime import datetime
-
-from PyQt5.QtCore import qInfo, qWarning, qFatal
-
+from PyQt5.QtCore import qInfo, qWarning
 
 class Logger:
-    # codec = QTextCodec.codecForName("utf8")
-
     def __init__(self, name: str = ""):
         self.name = name
         if self.name is None or self.name == "":

@@ -5,8 +5,6 @@ from PyQt5.QtCore import *
 
 from .controllers.route import router
 
-
-
 logger = Logger()
 
 class krita_http_api(Extension):

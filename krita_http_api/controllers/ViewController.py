@@ -134,8 +134,6 @@ __view_getter_impl.cache = __view_getter
 def all_views(window: Window) -> list[Tuple[int, QMdiSubWindow, View]]:
     return __view_getter.get(window)
 
-
-
 # __qarea = PerWindowCachedState(lambda window: window.qwindow().findChild(QMdiArea))
 # def all_views(window: Window) -> list[Tuple[int, QMdiSubWindow, View]]:
 #     qwindow = window.qwindow()

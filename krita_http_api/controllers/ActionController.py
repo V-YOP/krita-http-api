@@ -70,10 +70,10 @@ def action_listen(_):
     valid_actions = list(map(lambda x: x[0], filter(lambda x: (now - x[1]).seconds < ACTION_TIMEOUT, latest_actions)))
     latest_actions = []
     return valid_actions
-
+    
 __fst_run = True
 def __init():
-    global __fst_run
+    global __fst_run 
     if not __fst_run:
         return
     __fst_run = False
@@ -90,3 +90,4 @@ def __init():
                 latest_actions = list(filter(lambda x: (now - x[1]).seconds < ACTION_TIMEOUT, latest_actions))
             return mygo
         action.triggered.connect(go(action))
+

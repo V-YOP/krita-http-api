@@ -47,8 +47,8 @@ def state_get(_):
     with watch.watch('documentState'):
         doc = view.document()
         fname = doc.fileName()
-        # doc_info = DocumentInfo.from_document(doc)
-        # res['editTime'] = doc_info.edit_time
+        doc_info = DocumentInfo.from_document(doc)
+        res['editTime'] = doc_info.edit_time
         res['fileName'] = fname if fname != '' else None
         # when you can deselect, you have selections
         res['withSelection'] = Krita.instance().action('deselect').isEnabled()
